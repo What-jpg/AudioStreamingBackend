@@ -2,6 +2,8 @@
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using AudioStreamingApi.DependencyInjections;
+using Npgsql;
+using Dapper;
 
 namespace AudioStreamingApi;
 
@@ -77,6 +79,24 @@ public class Program
             if ((valueAppSettings == "" || valueAppSettings == null) && (valueEnv == "" || valueEnv == null))
             {
                 throw new Exception($"Config variable is missing you can either add it to .env ({key[0]}) or to appsettings.json ({key[1]})");
+            }
+        }
+
+        using (var connection = new NpgsqlConnection(new NpgsqlConnectionString().ConnectionString))
+        {
+            try
+            {
+                connection.Query("SELECT id FROM \"DbFiles\" WHERE id = 1");
+            } catch (Exception e)
+            {
+                connection.Query("CREATE TABLE \"DbFiles\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, path text NOT NULL, type text NOT NULL)");
+                connection.Query("CREATE TABLE \"Users\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"avatarId\" integer REFERENCES \"DbFiles\"(id), \"hashedPassword\" text NOT NULL, email text NOT NULL, name text NOT NULL, \"isTwoFactorAuthActive\" boolean NOT NULL DEFAULT false)");
+                connection.Query("CREATE TABLE \"Discography\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"artistId\" integer NOT NULL REFERENCES \"Users\"(id), name text NOT NULL, \"coverId\" integer REFERENCES \"DbFiles\"(id), \"createdAt\" timestamp without time zone NOT NULL DEFAULT now())");
+                connection.Query("CREATE TABLE \"Songs\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, name text NOT NULL, \"discId\" integer NOT NULL REFERENCES \"Discography\"(id), \"contentId\" integer NOT NULL REFERENCES \"DbFiles\"(id), \"createdAt\" timestamp without time zone NOT NULL DEFAULT now(), \"totalTime\" interval NOT NULL DEFAULT '00:00:00'::interval)");
+                connection.Query("CREATE TABLE \"ArtistsFollowers\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"followerId\" integer NOT NULL REFERENCES \"Users\"(id), \"elementId\" integer NOT NULL REFERENCES \"Users\"(id))");
+                connection.Query("CREATE TABLE \"DiscographyFollowers\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"followerId\" integer NOT NULL REFERENCES \"Users\"(id), \"elementId\" integer NOT NULL REFERENCES \"Discography\"(id))");
+                connection.Query("CREATE TABLE \"SongsFollowers\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"followerId\" integer NOT NULL REFERENCES \"Users\"(id), \"elementId\" integer NOT NULL REFERENCES \"Songs\"(id))");
+                connection.Query("CREATE TABLE \"SongsListened\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"listenerId\" integer NOT NULL REFERENCES \"Users\"(id), \"songId\" integer NOT NULL REFERENCES \"Songs\"(id), \"listenedAt\" timestamp without time zone NOT NULL DEFAULT now())");
             }
         }
 

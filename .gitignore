@@ -407,3 +407,5 @@ ASALocalRun/
 /appsettings.json
 
 **/UserFiles/*
+
+*.sln
