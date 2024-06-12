@@ -17,6 +17,8 @@ public class Program
 
         builder.Services.AddControllers();
 
+        builder.Services.AddHealthChecks();
+
         builder.Services.AddSingleton<INpgsqlConnectionString, NpgsqlConnectionString>();
         builder.Services.AddSingleton<IRedisConnection, RedisConnection>();
 
@@ -116,6 +118,8 @@ public class Program
         app.UseAuthorization();
 
         app.MapControllers();
+
+        app.MapHealthChecks("/health");
 
         app.Run();
     }
