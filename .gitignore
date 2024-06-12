@@ -406,4 +406,4 @@ ASALocalRun/
 
 /appsettings.json
 
-**/UserFiles/
+**/UserFiles/*
