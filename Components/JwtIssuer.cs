@@ -11,19 +11,19 @@ namespace AudioStreamingApi.Components
 		{
 		}
 
-		public static string CreateToken(IEnumerable<Claim> claims, DateTime expiresAt)
+        public static ConfigurationManager BuilderConfig = WebApplication.CreateBuilder().Configuration;
+
+        public static string JwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? BuilderConfig.GetSection("Jwt:Key").Get<string>();
+        public static string JwtIssuerStr = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? BuilderConfig.GetSection("Jwt:Issuer").Get<string>();
+
+        public static string CreateToken(IEnumerable<Claim> claims, DateTime expiresAt)
 		{
-			var builderConfig = WebApplication.CreateBuilder().Configuration;
-
-			string jwtKey = builderConfig.GetSection("Jwt:Key").Get<string>();
-			string jwtIssuer = builderConfig.GetSection("Jwt:Issuer").Get<string>();
-
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var secToken = new JwtSecurityToken(
-				jwtIssuer,
-				jwtIssuer,
+				JwtIssuerStr,
+				JwtIssuerStr,
 				claims,
 				expires: expiresAt,
 				signingCredentials: credentials
@@ -34,11 +34,6 @@ namespace AudioStreamingApi.Components
 
 		public static bool ValidateToken(string token, out List<Claim> claims)
 		{
-            var builderConfig = WebApplication.CreateBuilder().Configuration;
-
-            string jwtKey = builderConfig.GetSection("Jwt:Key").Get<string>();
-            string jwtIssuer = builderConfig.GetSection("Jwt:Issuer").Get<string>();
-
 			try
 			{
 				var claimsPrincipal = new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters
@@ -47,9 +42,9 @@ namespace AudioStreamingApi.Components
 					ValidateAudience = true,
 					ValidateLifetime = true,
 					ValidateIssuerSigningKey = true,
-					ValidIssuer = jwtIssuer,
-					ValidAudience = jwtIssuer,
-					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+					ValidIssuer = JwtIssuerStr,
+					ValidAudience = JwtIssuerStr,
+					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtKey))
 				}, out SecurityToken validatedToken);
 
 				claims = claimsPrincipal.Claims.ToList();

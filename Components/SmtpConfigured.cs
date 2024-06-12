@@ -9,23 +9,21 @@ namespace AudioStreamingApi.Components
 		{
 		}
 
-		public static SmtpClient GetSmtpClient()
-		{
-			var builderConfiguration = WebApplication.CreateBuilder().Configuration;
+		public static ConfigurationManager BuilderConfig = WebApplication.CreateBuilder().Configuration;
 
-			return new SmtpClient(builderConfiguration.GetSection("Smtp:Client").Get<string>())
+        public static SmtpClient GetSmtpClient()
+		{
+			return new SmtpClient(Environment.GetEnvironmentVariable("SMTP_CLIENT") ?? BuilderConfig.GetSection("Smtp:Client").Get<string>())
 			{
-				Port = builderConfiguration.GetSection("Smtp:Port").Get<int>(),
-				Credentials = new NetworkCredential(builderConfiguration.GetSection("Smtp:UserNameCredential").Get<string>(), builderConfiguration.GetSection("Smtp:PasswordCredential").Get<string>()),
+				Port = Convert.ToInt32(Environment.GetEnvironmentVariable("SMTP_PORT") ?? BuilderConfig.GetSection("Smtp:Port").Get<string>()),
+				Credentials = new NetworkCredential(Environment.GetEnvironmentVariable("SMTP_USER_NAME_CREDENTIAL") ?? BuilderConfig.GetSection("Smtp:UserNameCredential").Get<string>(), Environment.GetEnvironmentVariable("SMTP_PASSWORD_CREDENTIAL") ?? BuilderConfig.GetSection("Smtp:PasswordCredential").Get<string>()),
 				EnableSsl = true,
 			};
 		}
 
 		public static MailMessage GetMailMessage(string recipient, string subject, string body)
 		{
-            var builderConfiguration = WebApplication.CreateBuilder().Configuration;
-
-			return new MailMessage(builderConfiguration.GetSection("Smtp:Email").Get<string>(), recipient, subject, body);
+			return new MailMessage(Environment.GetEnvironmentVariable("SMTP_EMAIL") ?? BuilderConfig.GetSection("Smtp:Email").Get<string>(), recipient, subject, body);
         }
 	}
 }

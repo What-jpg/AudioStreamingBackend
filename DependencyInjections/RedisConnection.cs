@@ -5,7 +5,11 @@ namespace AudioStreamingApi.DependencyInjections
 {
 	public class RedisConnection : IRedisConnection
 	{
-		public RedisDBAccessor Connection { get { return new RedisDBAccessor(WebApplication.CreateBuilder().Configuration.GetConnectionString("Redis")); } }
+		public RedisDBAccessor Connection { get { 
+			var builderConfig = WebApplication.CreateBuilder().Configuration;
+
+			return new RedisDBAccessor(Environment.GetEnvironmentVariable("REDIS_URL") ?? builderConfig.GetConnectionString("Redis")); 
+		} }
 	}
 }
 

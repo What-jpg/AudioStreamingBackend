@@ -23,8 +23,8 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
-        var jwtIssuer = builder.Configuration.GetSection("Jwt:Issuer").Get<string>();
-        var jwtKey = builder.Configuration.GetSection("Jwt:Key").Get<string>();
+        var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? builder.Configuration.GetSection("Jwt:Issuer").Get<string>();
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? builder.Configuration.GetSection("Jwt:Key").Get<string>();
 
         builder.Services.AddCors(options =>
         {
@@ -55,34 +55,33 @@ public class Program
 
         var app = builder.Build();
 
-        var requiredVarsAppSettings =
-            new string[] {
-          "Port",
-          "JWT:Key",
-          "JWT:Issuer",
-          "ConnectionStrings:Postgresql",
-          "ConnectionStrings:Redis",
-          "Smtp:Client",
-          "Smtp:Port",
-          "Smtp:UserNameCredential",
-          "Smtp:PasswordCredential",
-          "Smtp:Email",
+        var requiredVarsEnviromentAndAppSettings =
+            new string[][] {
+              new string[] {"PORT", "Port"},
+              new string[] {"JWT_KEY", "Jwt:Key"},
+              new string[] {"JWT_ISSUER", "Jwt:Issuer"},
+              new string[] {"CONNECTION_STRING", "ConnectionStrings:Postgresql"},
+              new string[] {"REDIS_URL", "ConnectionStrings:Redis"},
+              new string[] {"SMTP_CLIENT", "Smtp:Client"},
+              new string[] {"SMTP_PORT", "Smtp:Port"},
+              new string[] {"SMTP_USER_NAME_CREDENTIAL", "Smtp:UserNameCredential"},
+              new string[] {"SMTP_PASSWORD_CREDENTIAL", "Smtp:PasswordCredential"},
+              new string[] {"SMTP_EMAIL", "Smtp:Email"}
             };
 
-        foreach (var key in requiredVarsAppSettings)
+        foreach (var key in requiredVarsEnviromentAndAppSettings)
         {
-            var value = app.Configuration.GetSection(key).Get<string>();
+            var valueEnv = Environment.GetEnvironmentVariable(key[0]);
+            var valueAppSettings = app.Configuration.GetSection(key[1]).Get<string>();
 
-            if (value == "" || value == null)
+            if ((valueAppSettings == "" || valueAppSettings == null) && (valueEnv == "" || valueEnv == null))
             {
-                throw new Exception($"AppSetings config variable missing: {key}.");
+                throw new Exception($"Config variable is missing you can either add it to .env ({key[0]}) or to appsettings.json ({key[1]})");
             }
         }
 
-        app.Urls.Add(
-            $"https://+:{app.Configuration.GetSection("Port").Get<string>()}");
-
-        // Configure the HTTP request pipeline.
+        var port = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration.GetSection("Port").Get<string>();
+        app.Urls.Add("http://*:" + port);
 
         if (app.Environment.IsDevelopment())
         {
