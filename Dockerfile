@@ -49,7 +49,6 @@ WORKDIR /app
 
 # Copy everything needed to run the app from the "build" stage.
 COPY --from=build /app .
-COPY /UserFiles/ /app/UserFiles/
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
