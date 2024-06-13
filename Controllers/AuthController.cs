@@ -239,9 +239,9 @@ namespace AudioStreamingApi.Controllers
             var smtpClient = SmtpConfigured.GetSmtpClient();
             var mailMessage = SmtpConfigured.GetMailMessage(authCodeValue.Email, "Code for authentication", $"Your code is {authCodeValue.AuthCode}");
 
-            // Commented, only for release
+            // Only for release, comment if in development
 
-            // smtpClient.Send(mailMessage);
+            smtpClient.Send(mailMessage);
         }
 
         public List<AuthTokenReturn> CreateAuthToken(int userId, bool needToRemember30Days)

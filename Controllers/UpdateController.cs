@@ -374,9 +374,9 @@ namespace AudioStreamingApi.Controllers
             var smtpClient = SmtpConfigured.GetSmtpClient();
             var mailMessage = SmtpConfigured.GetMailMessage(updateCodeValue.Email, "Code for user info update", $"Your code is {updateCodeValue.UpdateCode}");
 
-            // Commented, only for release
+            // Only for release, comment if in development
 
-            // smtpClient.Send(mailMessage);
+            smtpClient.Send(mailMessage);
         }
     }
 }
