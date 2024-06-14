@@ -119,7 +119,8 @@ public class Program
             }
         }
 
-        string port = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration.GetSection("Port").Get<string>() ?? "5000";
+        string port = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration.GetSection("Port").Get<string>() ?? "8080";
+
         app.Urls.Add("http://*:" + port);
 
         if (app.Environment.IsDevelopment())
