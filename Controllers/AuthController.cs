@@ -29,7 +29,6 @@ namespace AudioStreamingApi.Controllers
         [HttpPost("signup")]
         public ActionResult SignUpPost([FromForm] string userName, [FromForm] string password, [FromForm] string email, [FromForm] bool? needToRemember30Days, [FromForm] IFormFile? avatar)
         {
-            Console.WriteLine("Got it on server");
             if (!HttpControllersMethods.CheckIfVariablesAreNotNull(userName, password, email))
             {
                 return NotFound();
@@ -59,7 +58,14 @@ namespace AudioStreamingApi.Controllers
 
                 string hashedPassword = PasswordHasher.HashPassword(password);
 
-                CreateAuthCodeAndSendIt(null, userName, hashedPassword, email, needToRemember30DaysBool, avatar);
+                try
+                {
+                    CreateAuthCodeAndSendIt(null, userName, hashedPassword, email, needToRemember30DaysBool, avatar);
+                }
+                catch (Exception e)
+                {
+                    return StatusCode(500, "The problem occured, maybe part of our services unavailable");
+                }
 
                 return Ok();
             }
@@ -81,7 +87,9 @@ namespace AudioStreamingApi.Controllers
 
                 User? userInDb = connection.QueryFirstOrDefault<User>(getUserSql);
 
-                if (userInDb != null && PasswordHasher.VerifyHashedPassword(userInDb.HashedPassword, password))
+                var hashedPassword = userInDb.HashedPassword;
+
+                if (userInDb != null && PasswordHasher.VerifyHashedPassword(hashedPassword, password))
                 {
                     if (!userInDb.IsTwoFactorAuthActive)
                     {
@@ -90,7 +98,14 @@ namespace AudioStreamingApi.Controllers
                         ));
                     } else
                     {
-                        CreateAuthCodeAndSendIt(null, userInDb.Name, userInDb.HashedPassword, userInDb.Email, needToRemember30DaysBool);
+                        try
+                        {
+                            CreateAuthCodeAndSendIt(null, userInDb.Name, userInDb.HashedPassword, userInDb.Email, needToRemember30DaysBool);
+                        } catch (Exception e)
+                        {
+                            return StatusCode(500, "The problem occured, maybe part of our services unavailable");
+                        }
+
                         return Ok(null);
                     }
                 } else
@@ -234,14 +249,7 @@ namespace AudioStreamingApi.Controllers
         {
             redisHelper.AuthCodes.SetValue(authCodeValue.Email, JsonConvert.SerializeObject(authCodeValue), expirationTime);
 
-            Console.WriteLine($"The code is: {authCodeValue.AuthCode}");
-
-            var smtpClient = SmtpConfigured.GetSmtpClient();
-            var mailMessage = SmtpConfigured.GetMailMessage(authCodeValue.Email, "Code for authentication", $"Your code is {authCodeValue.AuthCode}");
-
-            // Only for release, comment if in development
-
-            smtpClient.Send(mailMessage);
+            SmtpConfigured.GetMailMessageAndSendIt(authCodeValue.Email, "Code for authentication", $"Your code is {authCodeValue.AuthCode}");
         }
 
         public List<AuthTokenReturn> CreateAuthToken(int userId, bool needToRemember30Days)

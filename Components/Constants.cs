@@ -2,7 +2,7 @@
 {
 	public class Constants
 	{
-		public static string UserFilesFolder = "UserFiles/";
+		public static string UserFilesFolder = "data/";
 	}
 }
 

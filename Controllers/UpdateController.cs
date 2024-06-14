@@ -133,7 +133,14 @@ namespace AudioStreamingApi.Controllers
                             userForRedis.AvatarHasChanged = true;
                         }
 
-                        CreateChangeCodeInDbAndSendIt(userForRedis, TimeSpan.FromMinutes(10));
+                        try
+                        {
+                            CreateChangeCodeInDbAndSendIt(userForRedis, TimeSpan.FromMinutes(10));
+                        }
+                        catch (Exception e)
+                        {
+                            return StatusCode(500, "The problem occured, maybe part of our services unavailable");
+                        }
 
                         return Ok(newEmail);
                     }
@@ -217,7 +224,15 @@ namespace AudioStreamingApi.Controllers
                     userFromRedis.UpdateCode = new Random().Next(100000, 999999).ToString();
                     userFromRedis.CreatedAt = DateTime.Now;
 
-                    CreateChangeCodeInDbAndSendIt(userFromRedis, TimeSpan.FromMinutes(10));
+                    try
+                    {
+                        CreateChangeCodeInDbAndSendIt(userFromRedis, TimeSpan.FromMinutes(10));
+                    }
+                    catch (Exception e)
+                    {
+                        return StatusCode(500, "The problem occured, maybe part of our services unavailable");
+                    }
+
                     return Ok();
                 }
                 else
@@ -369,14 +384,7 @@ namespace AudioStreamingApi.Controllers
         {
             redisHelper.ChangeCodes.SetValue(updateCodeValue.Email, JsonConvert.SerializeObject(updateCodeValue), expirationTime);
 
-            Console.WriteLine($"The code is: {updateCodeValue.UpdateCode}");
-
-            var smtpClient = SmtpConfigured.GetSmtpClient();
-            var mailMessage = SmtpConfigured.GetMailMessage(updateCodeValue.Email, "Code for user info update", $"Your code is {updateCodeValue.UpdateCode}");
-
-            // Only for release, comment if in development
-
-            smtpClient.Send(mailMessage);
+            SmtpConfigured.GetMailMessageAndSendIt(updateCodeValue.Email, "Code for user info update", $"Your code is {updateCodeValue.UpdateCode}");
         }
     }
 }

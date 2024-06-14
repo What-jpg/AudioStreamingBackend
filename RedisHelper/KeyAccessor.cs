@@ -21,13 +21,11 @@ namespace AudioStreamingApi.RedisHelper
 
         public string? GetValue(string key)
         {
-            Console.WriteLine(ConnectKeyToKeyType(key));
             return db.StringGet(ConnectKeyToKeyType(key));
         }
 
         public bool SetValue(string key, string value, TimeSpan? expirationTime = null)
         {
-            Console.WriteLine(ConnectKeyToKeyType(key));
             return db.StringSet(ConnectKeyToKeyType(key), value, expirationTime);
         }
 

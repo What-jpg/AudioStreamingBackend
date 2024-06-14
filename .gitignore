@@ -404,8 +404,8 @@ ASALocalRun/
 # Local History for Visual Studio
 .localhistory/
 
-/appsettings.json
+data/*
 
-**/UserFiles/*
+!data/.gitkeep 
 
 *.sln

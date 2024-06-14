@@ -66,11 +66,6 @@ public class Program
               new string[] {"JWT_ISSUER", "Jwt:Issuer"},
               new string[] {"CONNECTION_STRING", "ConnectionStrings:Postgresql"},
               new string[] {"REDIS_URL", "ConnectionStrings:Redis"},
-              new string[] {"SMTP_CLIENT", "Smtp:Client"},
-              new string[] {"SMTP_PORT", "Smtp:Port"},
-              new string[] {"SMTP_USER_NAME_CREDENTIAL", "Smtp:UserNameCredential"},
-              new string[] {"SMTP_PASSWORD_CREDENTIAL", "Smtp:PasswordCredential"},
-              new string[] {"SMTP_EMAIL", "Smtp:Email"}
             };
 
         foreach (var key in requiredVarsEnviromentAndAppSettings)
@@ -92,17 +87,24 @@ public class Program
             } catch (Exception e)
             {
                 connection.Query("CREATE TABLE \"DbFiles\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, path text NOT NULL, type text NOT NULL)");
+
                 connection.Query("CREATE TABLE \"Users\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"avatarId\" integer REFERENCES \"DbFiles\"(id), \"hashedPassword\" text NOT NULL, email text NOT NULL, name text NOT NULL, \"isTwoFactorAuthActive\" boolean NOT NULL DEFAULT false)");
+
                 connection.Query("CREATE TABLE \"Discography\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"artistId\" integer NOT NULL REFERENCES \"Users\"(id), name text NOT NULL, \"coverId\" integer REFERENCES \"DbFiles\"(id), \"createdAt\" timestamp without time zone NOT NULL DEFAULT now())");
+
                 connection.Query("CREATE TABLE \"Songs\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, name text NOT NULL, \"discId\" integer NOT NULL REFERENCES \"Discography\"(id), \"contentId\" integer NOT NULL REFERENCES \"DbFiles\"(id), \"createdAt\" timestamp without time zone NOT NULL DEFAULT now(), \"totalTime\" interval NOT NULL DEFAULT '00:00:00'::interval)");
+
                 connection.Query("CREATE TABLE \"ArtistsFollowers\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"followerId\" integer NOT NULL REFERENCES \"Users\"(id), \"elementId\" integer NOT NULL REFERENCES \"Users\"(id))");
+
                 connection.Query("CREATE TABLE \"DiscographyFollowers\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"followerId\" integer NOT NULL REFERENCES \"Users\"(id), \"elementId\" integer NOT NULL REFERENCES \"Discography\"(id))");
+
                 connection.Query("CREATE TABLE \"SongsFollowers\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"followerId\" integer NOT NULL REFERENCES \"Users\"(id), \"elementId\" integer NOT NULL REFERENCES \"Songs\"(id))");
+
                 connection.Query("CREATE TABLE \"SongsListened\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, \"listenerId\" integer NOT NULL REFERENCES \"Users\"(id), \"songId\" integer NOT NULL REFERENCES \"Songs\"(id), \"listenedAt\" timestamp without time zone NOT NULL DEFAULT now())");
             }
         }
 
-        var port = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration.GetSection("Port").Get<string>();
+        string port = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration.GetSection("Port").Get<string>() ?? "5000";
         app.Urls.Add("http://*:" + port);
 
         if (app.Environment.IsDevelopment())
