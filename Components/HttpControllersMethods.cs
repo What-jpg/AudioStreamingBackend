@@ -169,7 +169,7 @@ namespace AudioStreamingApi.Components
                 return Convert.ToBase64String(returnArray);
             } catch (Exception ex)
             {
-                return "";
+                return "Error trimming the file";
             }
         }
 

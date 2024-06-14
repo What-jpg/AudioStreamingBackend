@@ -4,6 +4,8 @@ using System.Text;
 using AudioStreamingApi.DependencyInjections;
 using Npgsql;
 using Dapper;
+using AudioStreamingApi.Models.DbModels;
+using AudioStreamingApi.Components;
 
 namespace AudioStreamingApi;
 
@@ -83,8 +85,21 @@ public class Program
         {
             try
             {
-                connection.Query("SELECT id FROM \"DbFiles\" WHERE id = 1");
-            } catch (Exception e)
+                var testDbFiles = connection.Query<DbFile>("SELECT id FROM \"DbFiles\" LIMIT 1").ToArray();
+
+                if (testDbFiles.Length != 0)
+                {
+                    try
+                    {
+                        HttpControllersMethods.GetBytesFromDbFile(testDbFiles[0]);
+                    } catch
+                    {
+                        connection.Query("DROP TABLE \"DbFiles\", \"Users\", \"Discography\", \"Songs\", \"ArtistsFollowers\", \"DiscographyFollowers\", \"SongsFollowers\", \"SongsListened\"");
+
+                        throw new Exception("Exception for calling previous try block");
+                    }
+                }
+            } catch
             {
                 connection.Query("CREATE TABLE \"DbFiles\" (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, path text NOT NULL, type text NOT NULL)");
 

@@ -50,7 +50,7 @@ WORKDIR /app
 # Copy everything needed to run the app from the "build" stage.
 COPY --from=build /app .
 COPY ./data ./data
-VOLUME ./data/ ./data/
+VOLUME ./data ./data
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
@@ -63,8 +63,6 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     appuser
-
-RUN apk add bind-tools
 
 RUN chown -R appuser:appuser ./data
 RUN chmod 755 ./data
