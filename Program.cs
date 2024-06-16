@@ -135,12 +135,12 @@ public class Program
 
         foreach (var key in requiredVarsEnviromentAndAppSettings)
         {
-            var valueEnv = Environment.GetEnvironmentVariable(key[0], EnvironmentVariableTarget.Machine);
+            var valueEnv = Environment.GetEnvironmentVariable(key[0]);
             var valueAppSettings = app.Configuration.GetSection(key[1]).Get<string>();
 
             if ((valueAppSettings == "" || valueAppSettings == null) && (valueEnv == "" || valueEnv == null))
             {
-                throw new Exception($"Config variable is missing you need to add it to launchsettings.json ({key[0]})");
+                throw new Exception($"Config variable is missing you need to add it to enviroment ({key[0]})");
             }
         }
 
