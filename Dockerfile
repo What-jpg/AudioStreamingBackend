@@ -50,7 +50,7 @@ WORKDIR /app
 # Copy everything needed to run the app from the "build" stage.
 COPY --from=build /app .
 COPY ./data ./data
-VOLUME ./data ./data
+VOLUME /app/data
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/

@@ -56,13 +56,18 @@ namespace AudioStreamingApi.Components
 			}
 		}
 
+		public static string GetTokenFromBearerString(string bearerToken)
+		{
+            return (bearerToken).Split(" ")[1] ?? (bearerToken).Split(" ")[0];
+        }
+
 		public static string? GetTokenFromHeaders(IHeaderDictionary headers)
 		{
 			try
 			{
 				var tokenRaw = (string)headers["Authorization"];
 
-				return (tokenRaw).Split(" ")[1];
+				return GetTokenFromBearerString(tokenRaw);
 			} catch (Exception e)
 			{
 				return null;

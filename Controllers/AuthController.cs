@@ -87,9 +87,7 @@ namespace AudioStreamingApi.Controllers
 
                 User? userInDb = connection.QueryFirstOrDefault<User>(getUserSql);
 
-                var hashedPassword = userInDb.HashedPassword;
-
-                if (userInDb != null && PasswordHasher.VerifyHashedPassword(hashedPassword, password))
+                if (userInDb != null && PasswordHasher.VerifyHashedPassword(userInDb.HashedPassword, password))
                 {
                     if (!userInDb.IsTwoFactorAuthActive)
                     {
@@ -214,12 +212,9 @@ namespace AudioStreamingApi.Controllers
 
         public void CreateAuthCodeAndSendIt(int? id, string userName, string hashedPassword, string email, bool needToRemember30Days, IFormFile? avatar = null)
         {
-            string signUpCode = "";
-
-
-            string avatarContent = null;
-            string avatarContentType = null;
-            string avatarFileName = null;
+            string? avatarContent = null;
+            string? avatarContentType = null;
+            string? avatarFileName = null;
 
             if (avatar != null)
             {

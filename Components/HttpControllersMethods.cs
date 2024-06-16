@@ -8,11 +8,11 @@ using AudioStreamingApi.Models.PseudoDbModels;
 
 namespace AudioStreamingApi.Components
 {
-	public class HttpControllersMethods
-	{
-		public HttpControllersMethods()
-		{
-		}
+    public class HttpControllersMethods
+    {
+        public HttpControllersMethods()
+        {
+        }
 
         public static string[] SplitFileNameWithContentTypeIntoTwoParts(string fileName)
         {
@@ -34,7 +34,7 @@ namespace AudioStreamingApi.Components
         }
 
         public static bool CheckIfImageDataIsNotNullAndSaveToDb(IFormFile? image, NpgsqlConnection npgsqlDbConnection, out int? imageIdInDb)
-		{
+        {
             if (!CheckIfImageDataIsNotNull(image))
             {
                 imageIdInDb = null;
@@ -141,7 +141,7 @@ namespace AudioStreamingApi.Components
 
                             string contentRaw = TrimMp3(reader, cutFromStart, cutFromEnd, out long totalSongBytes);
 
-                            returnObj = new AudioStringContentAndIsLastSongPart(contentRaw , isLastSongPart);
+                            returnObj = new AudioStringContentAndIsLastSongPart(contentRaw, isLastSongPart);
                         }
                         else
                         {
@@ -167,7 +167,8 @@ namespace AudioStreamingApi.Components
                 Buffer.BlockCopy(audioContent, startPos, returnArray, 0, bytesToCopy);
 
                 return Convert.ToBase64String(returnArray);
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return "Error trimming the file";
             }
@@ -176,7 +177,7 @@ namespace AudioStreamingApi.Components
         public static string TrimMp3(Mp3FileReaderBase reader, TimeSpan? begin, TimeSpan? end, out long totalSongBytes)
         {
             if (begin.HasValue && end.HasValue && begin > end)
-                throw new ArgumentOutOfRangeException("end", "end should be greater than begin");            
+                throw new ArgumentOutOfRangeException("end", "end should be greater than begin");
 
             List<byte> bytesToReturn = new List<byte>();
 
@@ -196,7 +197,7 @@ namespace AudioStreamingApi.Components
                     }
                     else totalSBytes += frameBytes.Length;
                 }
-            
+
 
             totalSongBytes = totalSBytes;
 
@@ -216,7 +217,7 @@ namespace AudioStreamingApi.Components
 
         public static TimeSpan GetSongTotalTime(Song song)
         {
-           TimeSpan timeSpan;
+            TimeSpan timeSpan;
 
             var mp3ReaderBuilder = new Mp3FileReader.FrameDecompressorBuilder(wf => new Mp3FrameDecompressor(wf));
 
@@ -243,7 +244,7 @@ namespace AudioStreamingApi.Components
 
         public static byte[] GetContentFromFormFile(IFormFile file)
         {
-            using (var memoryStream = new MemoryStream()) 
+            using (var memoryStream = new MemoryStream())
             {
                 file.CopyTo(memoryStream);
 
@@ -282,7 +283,7 @@ namespace AudioStreamingApi.Components
         {
             DbFileWithContent? avatar = null;
 
-            if (user.Avatar != null)
+            if (user?.Avatar != null)
             {
                 avatar = ConvertDbFileToFormatForUsers(user.Avatar);
             }
@@ -293,19 +294,23 @@ namespace AudioStreamingApi.Components
         public static DiscForUsers ConvertDiscToFormatForUsers(Disc disc)
         {
             UserForUsers? artist = null;
-            if(disc.Artist != null)
+
+            if (disc?.Artist != null)
             {
                 artist = ConvertUserToFormatForUsers(disc.Artist);
             }
 
             DbFileWithContent? cover = null;
-            if (disc.Cover != null)
+
+            if (disc?.Cover != null)
             {
                 cover = ConvertDbFileToFormatForUsers(disc.Cover);
             }
 
             List<SongForUsers> songs = new List<SongForUsers>();
-            if (disc.Songs != null) {
+
+            if (disc?.Songs != null)
+            {
                 foreach (var song in disc.Songs)
                 {
                     songs.Add(ConvertSongToFormatForUsers(song));
@@ -318,7 +323,7 @@ namespace AudioStreamingApi.Components
         public static SongForUsers ConvertSongToFormatForUsers(Song song)
         {
             DiscForUsers? disc = null;
-            if (song.Disc != null)
+            if (song?.Disc != null)
             {
                 disc = ConvertDiscToFormatForUsers(song.Disc);
             }
@@ -335,7 +340,8 @@ namespace AudioStreamingApi.Components
                 try
                 {
                     songs.Add(ConvertSongToFormatForUsers(DbMethods.GetSongById(item.ItemId, npgsqlDbConnection)));
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     throw new Exception($"Song with id {item.ItemId} wasn't found");
                 }
@@ -502,4 +508,3 @@ namespace AudioStreamingApi.Components
         }
     }
 }
-

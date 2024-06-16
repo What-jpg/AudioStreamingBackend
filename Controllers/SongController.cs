@@ -5,6 +5,7 @@ using AudioStreamingApi.Models;
 using AudioStreamingApi.DependencyInjections;
 using AudioStreamingApi.RedisHelper;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using AudioStreamingApi.Models.DbModels;
 using Microsoft.AspNetCore.Authorization;
 
@@ -68,8 +69,10 @@ namespace AudioStreamingApi.Controllers
                     }
                     try
                     {
-                        ContinueStreamingSongInfo songInfo = ContinueStreamingSong(song, startAtNotNullable, userId, redisHelper);
+                        redisHelper.CurrentlyListening.SetValue(Convert.ToString(userId), JsonConvert.SerializeObject(new CurrentlyListeningRedisValue(song.Id, DateTime.Now)));
 
+                        ContinueStreamingSongInfo songInfo = ContinueStreamingSong(song, startAtNotNullable);
+                        
                         redisHelper.CurrentlyListening.SetValue(Convert.ToString(userId), JsonConvert.SerializeObject(new CurrentlyListeningRedisValue(song.Id, DateTime.Now)));
 
                         return Ok(JsonConvert.SerializeObject(songInfo));
@@ -109,7 +112,7 @@ namespace AudioStreamingApi.Controllers
                 {
                     try
                     {
-                        return Ok(JsonConvert.SerializeObject(ContinueStreamingSong(song, continueAt, userId, redisHelper)));
+                        return Ok(JsonConvert.SerializeObject(ContinueStreamingSong(song, continueAt)));
                     }
                     catch (Exception ex)
                     {
@@ -123,8 +126,31 @@ namespace AudioStreamingApi.Controllers
             }
         }
 
+        [HttpPost("stopstreamingsongtokenbody")]
+        public ActionResult StopStreamingSongGetTokenBody([FromForm] string token)
+        {
+            if (JwtIssuer.ValidateToken(JwtIssuer.GetTokenFromBearerString(token), out List<System.Security.Claims.Claim> claims))
+            {
+                int userId = Convert.ToInt32(claims[0].Value);
+
+                try
+                {
+                    StopStreamingSong(userId, redisHelper, mainDbConnectionString);
+
+                    return Ok();
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+            } else
+            {
+                return StatusCode(401);
+            }
+        }
+
         [Authorize]
-        [HttpGet("stopstreamingsong")]
+        [HttpPost("stopstreamingsong")]
         public ActionResult StopStreamingSongGet()
         {
             int userId = HttpControllersMethods.GetUserIdFromHttpContextIfAuthorized(HttpContext);
@@ -132,22 +158,22 @@ namespace AudioStreamingApi.Controllers
             try
             {
                 StopStreamingSong(userId, redisHelper, mainDbConnectionString);
+
                 return Ok();
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
         }
 
-        private static ContinueStreamingSongInfo ContinueStreamingSong(Song song, TimeSpan startAt, int userId, RedisDBAccessor redisHelper)
+        private static ContinueStreamingSongInfo ContinueStreamingSong(Song song, TimeSpan startAt)
         {
             int partDurationInt = 60;
 
             TimeSpan partDuration = TimeSpan.FromSeconds(partDurationInt);
             
             AudioStringContentAndIsLastSongPart contentAndIsLastSongPart = HttpControllersMethods.TrimAudioFileForStreaming(song.Content, startAt, partDuration + startAt);
-            
-            redisHelper.CurrentlyListening.SetValue(Convert.ToString(userId), JsonConvert.SerializeObject(new CurrentlyListeningRedisValue(song.Id, DateTime.Now)));
 
             TimeSpan? whenToUpdate = TimeSpan.FromSeconds(Convert.ToDouble(partDurationInt) / 12.0);
 
@@ -161,20 +187,23 @@ namespace AudioStreamingApi.Controllers
 
         private static void StopStreamingSong(int userId, RedisDBAccessor redisHelper, string npgsqlConnectionString)
         {
-            if (redisHelper.CurrentlyListening.GetValue(Convert.ToString(userId)) != null)
+            var currentlyListeningJson = redisHelper.CurrentlyListening.GetValue(Convert.ToString(userId));
+
+            if (currentlyListeningJson != null)
             {
                 DateTime stoppedListeningAt = DateTime.Now;
-                CurrentlyListeningRedisValue? currentlyListening = JsonConvert.DeserializeObject<CurrentlyListeningRedisValue>(redisHelper.CurrentlyListening.GetValue(Convert.ToString(userId)));
+
+                CurrentlyListeningRedisValue? currentlyListening = JsonConvert.DeserializeObject<CurrentlyListeningRedisValue>(currentlyListeningJson);
 
                 using (var connection = new NpgsqlConnection(npgsqlConnectionString))
                 {
                     var song = DbMethods.GetSongById(currentlyListening.SongId, connection);
 
                     TimeSpan songTotalTime = HttpControllersMethods.GetSongTotalTime(song);
-
+                    
                     TimeSpan minWatchTime = TimeSpan.FromMinutes(1);
 
-                    if (songTotalTime < TimeSpan.FromMinutes(2))
+                    if (songTotalTime < TimeSpan.FromMinutes(3))
                     {
                         minWatchTime = songTotalTime * 0.33;
                     }

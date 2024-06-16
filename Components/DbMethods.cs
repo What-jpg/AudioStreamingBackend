@@ -17,7 +17,7 @@ namespace AudioStreamingApi.Components
 		{
 			string acceptable = num.ToString();
 
-			if(num == null)
+			if (num == null)
 			{
 				acceptable = "null";
 			}
@@ -280,7 +280,7 @@ namespace AudioStreamingApi.Components
 
             User? user = npgsqlDbConnection.Query<User>(sql).SingleOrDefault();
 
-            if (user.AvatarId != null)
+            if (user?.AvatarId != null)
             {
                 user.Avatar = GetDbFileById(user.AvatarId!.Value, npgsqlDbConnection);
             }

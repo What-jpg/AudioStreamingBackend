@@ -61,31 +61,11 @@ public class Program
 
         var app = builder.Build();
 
-        var requiredVarsEnviromentAndAppSettings =
-            new string[][] {
-              new string[] {"PORT", "Port"},
-              new string[] {"JWT_KEY", "Jwt:Key"},
-              new string[] {"JWT_ISSUER", "Jwt:Issuer"},
-              new string[] {"CONNECTION_STRING", "ConnectionStrings:Postgresql"},
-              new string[] {"REDIS_URL", "ConnectionStrings:Redis"},
-            };
-
-        foreach (var key in requiredVarsEnviromentAndAppSettings)
-        {
-            var valueEnv = Environment.GetEnvironmentVariable(key[0]);
-            var valueAppSettings = app.Configuration.GetSection(key[1]).Get<string>();
-
-            if ((valueAppSettings == "" || valueAppSettings == null) && (valueEnv == "" || valueEnv == null))
-            {
-                throw new Exception($"Config variable is missing you can either add it to .env ({key[0]}) or to appsettings.json ({key[1]})");
-            }
-        }
-
         using (var connection = new NpgsqlConnection(new NpgsqlConnectionString().ConnectionString))
         {
             try
             {
-                var testDbFiles = connection.Query<DbFile>("SELECT id FROM \"DbFiles\" LIMIT 1").ToArray();
+                var testDbFiles = connection.Query<DbFile>("SELECT * FROM \"DbFiles\" LIMIT 1").ToArray();
 
                 if (testDbFiles.Length != 0)
                 {
@@ -119,18 +99,49 @@ public class Program
             }
         }
 
-        string port = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration.GetSection("Port").Get<string>() ?? "8080";
+        string port = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration.GetSection("Port").Get<string>();
 
         app.Urls.Add("http://*:" + port);
+
+        var requiredVarsEnviromentAndAppSettings =
+            new List<string[]> {
+                new string[] {"PORT", "Port"},
+                new string[] {"JWT_KEY", "Jwt:Key"},
+                new string[] {"JWT_ISSUER", "Jwt:Issuer"},
+                new string[] {"CONNECTION_STRING", "ConnectionStrings:Postgresql"},
+                new string[] {"REDIS_URL", "ConnectionStrings:Redis"}
+            };
 
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
-        } else
+        }
+        else
         {
+            var requiredVarsEnviromentAndAppSettingsOnlyForProduction = new string[][] {
+                new string[] {"SMTP_CLIENT", "Smtp:Client"},
+                new string[] {"SMTP_PORT", "Smtp:Port"},
+                new string[] {"SMTP_USER_NAME_CREDENTIAL", "Smtp:UserNameCredential"},
+                new string[] {"SMTP_PASSWORD_CREDENTIAL", "Smtp:PasswordCredential"},
+                new string[] {"SMTP_MAIL_FROM_EMAIL", "Smtp:MailFromEmail"}
+            };
+
+            requiredVarsEnviromentAndAppSettings.AddRange(requiredVarsEnviromentAndAppSettingsOnlyForProduction);
+
             app.UseExceptionHandler("/Error");
             app.UseHsts();
+        }
+
+        foreach (var key in requiredVarsEnviromentAndAppSettings)
+        {
+            var valueEnv = Environment.GetEnvironmentVariable(key[0], EnvironmentVariableTarget.Machine);
+            var valueAppSettings = app.Configuration.GetSection(key[1]).Get<string>();
+
+            if ((valueAppSettings == "" || valueAppSettings == null) && (valueEnv == "" || valueEnv == null))
+            {
+                throw new Exception($"Config variable is missing you need to add it to launchsettings.json ({key[0]})");
+            }
         }
 
         app.UseHttpsRedirection();

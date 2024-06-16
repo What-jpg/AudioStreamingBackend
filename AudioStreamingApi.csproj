@@ -11,7 +11,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.12" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    <PackageReference Include="dotenv.net" Version="3.1.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Npgsql" Version="7.0.6" />
     <PackageReference Include="Dapper" Version="2.1.24" />
@@ -42,5 +41,8 @@
     <Folder Include="Models\PseudoDbModels\" />
     <Folder Include="Models\InterfacesForModels\" />
     <Folder Include="Models\InterfacesForModels\PseudoDbInterfaces\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="appsettings.Production.json" />
   </ItemGroup>
 </Project>
